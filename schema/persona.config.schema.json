@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PersonaEvolutionConfig",
+  "description": "persona.config.json 结构：环境配置，与人格状态分离。换模型只改这里；密钥走路径引用，不落密钥本体。",
+  "type": "object",
+  "required": ["model_slot", "adapter", "tick"],
+  "properties": {
+    "model_slot": {
+      "type": "object",
+      "properties": {
+        "provider": { "type": "string", "description": "供应商标识（供适配器/日志用）" },
+        "model": { "type": "string" },
+        "api_key_path": { "type": "string", "description": "密钥文件路径（路径引用，不落密钥本体）" },
+        "endpoint": { "type": "string", "description": "OpenAI 兼容端点" }
+      }
+    },
+    "adapter": { "type": "string", "enum": ["dsh", "openai", "openai-compatible", "langchain", "custom"], "default": "dsh" },
+    "llm_hooks": {
+      "type": "object",
+      "properties": {
+        "mode": { "enum": ["prefill", "api"], "default": "prefill",
+                 "description": "prefill：宿主 agent 提供（DSH）；api：适配器直连（OpenAI/LangChain）" }
+      }
+    },
+    "tick": {
+      "type": "object",
+      "properties": { "interval_ms": { "type": "integer", "default": 300000, "minimum": 60000 } }
+    },
+    "runtime": {
+      "type": "object",
+      "properties": {
+        "python": { "type": "string", "description": "本机解释器路径（MCP 等宿主进程用；空则回退）" },
+        "plugin_root": { "type": "string", "description": "运行时根覆盖（空则按本包位置）" }
+      }
+    }
+  }
+}

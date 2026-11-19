@@ -1,0 +1,56 @@
+{
+  "schema_version": "2.0.0",
+  "name": "persona-evolution",
+  "version": "2.0.0",
+  "type": "persona-engine",
+  "description": "通用人格演化引擎：稳定的 SELF 内核（全槽位化，使用者填入）+ 可修订的关系假设系统。插件不绑定任何性格标签；人格状态外置、可迁移、可审计，底层模型只负责推理与生成。",
+  "license": "MIT",
+  "entrypoint": {
+    "engine": "src/persona_evo.py:PersonaEvo",
+    "cli": "src/run.py",
+    "adapter": "src/adapter.py:PersonaEvoAdapter",
+    "mcp": "src/mcp_persona_evo.py",
+    "validation": "src/validate_evolution.py:validate_dimension",
+    "skill_doc": "SKILL.md"
+  },
+  "model_capabilities": {
+    "required": [
+      { "capability": "narrative_generation", "purpose": "生成 her_read / threat_type（第一人称解读）。禁止直接产出情绪或行为。", "called_by": "on_interaction 步骤1" },
+      { "capability": "constrained_behavior_generation", "purpose": "在策略意图+边界约束内生成具体行为。约束不含句式模板，示例句不得直接念。", "called_by": "on_interaction 步骤4" },
+      { "capability": "attribution_analysis", "purpose": "事件级反思归因：narrative_error / strategy_error / both_ok / insufficient_data（→ BLINDSPOT）。", "called_by": "reflect_event" }
+    ],
+    "optional": [
+      { "capability": "hypothesis_revision", "purpose": "叙事级反思提出可回滚的中期假设修订。", "called_by": "maybe_reflect_narrative" }
+    ],
+    "local_only": [
+      "OCC→Plutchik 映射", "trial 计数/固化/回滚状态机", "关系账户/张力/大五更新（含 clamp）", "tick 衰减循环", "审计日志"
+    ]
+  },
+  "files": {
+    "persona_state": "persona.json",
+    "runtime_config": "persona.config.json",
+    "snapshot": "state.json",
+    "seeds": "policies/seed_policies.json",
+    "audit_log": "logs/audit_log.jsonl",
+    "state_schema": "schema/persona.schema.json",
+    "config_schema": "schema/persona.config.schema.json"
+  },
+  "immutable": {
+    "layers": ["L0_SELF"],
+    "note": "SELF 全部为槽位，由使用者初始化时填入；运行期任何路径（反思/情绪/self_write）无写入口；引擎写回前逐字比对 SELF 快照，非法修改即拒绝写回。"
+  },
+  "optional_layers": ["L1_BIG5"],
+  "host_contract": {
+    "lifecycle": ["load", "on_interaction", "on_feedback", "reflect_event", "maybe_reflect_narrative", "tick", "shutdown"],
+    "prompt_context_keys": ["hard_rules", "relation_state", "current_policies", "last_reflection", "current_emotion", "blindspot"],
+    "feedback_kinds": ["LIKED", "DISLIKE", "BOUNDARY_EVENT", "NEUTRAL"],
+    "signal_domain": ["success", "fail", "uncertain"]
+  },
+  "design_guards": {
+    "no_dialogue": true,
+    "no_reaction_list": "任何『如果她说X就该回Y』清单不得进入；新增策略只能经 trial→stable。",
+    "personality_agnostic": "SELF 与种子策略槽位化；系统不含任何性格标签。",
+    "verbal_pattern_scope": "只约束意图与边界，不约束句式。",
+    "uncertain_discipline": "判定不确定时一律 uncertain：不更新权重、不推进 trial。宁可演化慢，不可演化错。"
+  }
+}

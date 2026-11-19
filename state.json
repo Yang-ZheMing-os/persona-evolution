@@ -1,0 +1,15 @@
+{
+  "current_emotion": {
+    "immediate": [],
+    "mood": {
+      "valence": 0.0,
+      "arousal": 0.4,
+      "dominance": 0.5
+    }
+  },
+  "active_policies": [],
+  "last_reflection_summary": null,
+  "open_blindspots": [],
+  "tick_count": 0,
+  "snapshot_at": "1970-01-01T00:00:00+00:00"
+}

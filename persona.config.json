@@ -1,0 +1,20 @@
+{
+  "_comment": "环境配置（与人格状态分离，换模型只改这里，persona.json 零改动）。密钥走路径引用，不落密钥本体。",
+  "model_slot": {
+    "provider": "",
+    "model": "",
+    "api_key_path": "",
+    "endpoint": ""
+  },
+  "adapter": "dsh",
+  "llm_hooks": {
+    "mode": "prefill",
+    "_comment": "dsh：宿主 agent 会话即模型能力提供方，narrate/attribute 以 prefill JSON 传入（见 src/run.py）。openai/langchain：由适配器按 model_slot 构造 LLMHooks（见 src/adapter.py 与 docs/adapter_guide.md）。"
+  },
+  "tick": { "interval_ms": 300000 },
+  "runtime": {
+    "python": "",
+    "_comment": "本机 Python 解释器路径（MCP 服务器等宿主进程用；空则依次尝试 config → 环境变量 → PATH）",
+    "plugin_root": ""
+  }
+}

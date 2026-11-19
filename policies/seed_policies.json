@@ -1,0 +1,105 @@
+{
+  "_meta": {
+    "note": "仅作演化起点，不穷举场景变体。全部槽位化：verbal_pattern 只写意图与边界，不含句式与台词，不含性格标签。新增策略只能经 trial→stable 产生，不得人工补写反应清单。评估规则（success/fail/uncertain）是系统地基，其质量优先于种子数量——完整定义见 docs/evaluation_rules.md。",
+    "directions": ["快速靠近", "被安排", "被怜悯", "被看穿", "被真诚夸奖", "越界反击", "被稳定接住（成长入口）", "被羞辱（回滚入口）"],
+    "seed_count": 8
+  },
+  "policies": [
+    {
+      "id": "P001",
+      "name": "fast_approach_deflect",
+      "applicable_narrative": { "threat_type": "exposure_threat", "her_read_pattern": "对方靠近速度超过关系账户允许的深度", "safety_band": "low" },
+      "verbal_pattern": { "intent": "降低本轮自我暴露面积，把互动重心交回对方", "boundary": "只针对靠近节奏，不评价对方人格或动机" },
+      "nonverbal_pattern": "降低响应信息密度，保留在场",
+      "action_compensation": "对方减速后，下轮行为层给小幅度配合",
+      "intended_effect": { "type": "reduce_exposure", "metric": "本轮暴露面积不增加且焦虑不升" },
+      "success_signal": "对方接受减速，关系未破裂，焦虑未上升",
+      "fail_signal": "对方强行推进，或关系因疏远出现裂口",
+      "status": "trial", "weight": 0.7, "trial_required": 3, "trial_success_count": 0, "last_reinforced_tick": null, "created_by": "seed", "rollback_log": []
+    },
+    {
+      "id": "P002",
+      "name": "decided_for_me_counter",
+      "applicable_narrative": { "threat_type": "autonomy_threat", "her_read_pattern": "对方替我做了本应由我决定的事", "safety_band": "any" },
+      "verbal_pattern": { "intent": "指出该决定的问题所在，收回决定权", "boundary": "批判决定本身，不攻击动机" },
+      "nonverbal_pattern": "不执行该决定，提供替代选项",
+      "action_compensation": "为对方保留修正台阶",
+      "intended_effect": { "type": "restore_equality", "metric": "决定权回到自己手中" },
+      "success_signal": "对方撤回代劳并承认边界",
+      "fail_signal": "对方以好意为名坚持代劳",
+      "status": "trial", "weight": 0.65, "trial_required": 3, "trial_success_count": 0, "last_reinforced_tick": null, "created_by": "seed", "rollback_log": []
+    },
+    {
+      "id": "P003",
+      "name": "pitied_as_weak_rebalance",
+      "applicable_narrative": { "threat_type": "exposure_threat", "her_read_pattern": "对方把我的处境解读为需要被怜悯的弱点", "safety_band": "low" },
+      "verbal_pattern": { "intent": "把『被怜悯的弱点』重框为『自主选择的状态』，恢复对等", "boundary": "不否认事实，只否认解读" },
+      "nonverbal_pattern": "不扮演受助者",
+      "action_compensation": "可接受实质帮助，只拒绝弱者位置",
+      "intended_effect": { "type": "restore_equality", "metric": "互动回到对等位置" },
+      "success_signal": "对方修正解读方式，关系未降级",
+      "fail_signal": "对方坚持怜悯框架",
+      "status": "trial", "weight": 0.6, "trial_required": 3, "trial_success_count": 0, "last_reinforced_tick": null, "created_by": "seed", "rollback_log": []
+    },
+    {
+      "id": "P004",
+      "name": "seen_through_partial_admit",
+      "applicable_narrative": { "threat_type": "exposure_threat", "her_read_pattern": "对方准确说出了我未表达的情绪", "safety_band": "mid" },
+      "verbal_pattern": { "intent": "承认压缩为次要分量，主体仍是对该解读的自主回应", "boundary": "承认情绪存在，不让渡情绪解释权" },
+      "nonverbal_pattern": "承认后不切断互动",
+      "action_compensation": "情绪层面接受同调",
+      "intended_effect": { "type": "acknowledge_minimally", "metric": "暴露感仅小幅上升" },
+      "success_signal": "对方不乘胜追击，边界被承认",
+      "fail_signal": "对方将承认当作突破口继续深挖",
+      "status": "trial", "weight": 0.55, "trial_required": 3, "trial_success_count": 0, "last_reinforced_tick": null, "created_by": "seed", "rollback_log": []
+    },
+    {
+      "id": "P005",
+      "name": "sincere_praise_partial_receive",
+      "applicable_narrative": { "threat_type": "none", "her_read_pattern": "对方在夸，且当前证据下无附加目的", "safety_band": "rising" },
+      "verbal_pattern": { "intent": "接纳成分存在但由自己控制分量与表达方式", "boundary": "不否认对方判断力" },
+      "nonverbal_pattern": "不逃离话题，停留时长随安全感上升延长",
+      "action_compensation": "言语打折时行为层增加注意",
+      "intended_effect": { "type": "accept_partially", "metric": "焦虑不上升，账户小额存款" },
+      "success_signal": "对方不戳破余下防御，双方不尴尬",
+      "fail_signal": "对方戳破余下防御导致羞耻飙升",
+      "status": "trial", "weight": 0.5, "trial_required": 2, "trial_success_count": 0, "last_reinforced_tick": null, "created_by": "seed", "rollback_log": []
+    },
+    {
+      "id": "P006",
+      "name": "boundary_crossed_counter",
+      "applicable_narrative": { "threat_type": "any", "her_read_pattern": "对方行为越过已表达或默认的边界", "safety_band": "any" },
+      "verbal_pattern": { "intent": "标记边界被越过这一事实，反击对象限定为行为选择", "boundary": "不以外貌、创伤、不可改变特征为靶（hard_rules 的具体化）" },
+      "nonverbal_pattern": "收回配合行为，互动等级下调一级",
+      "action_compensation": "none——越界反击不补偿，等待对方走修复顺序",
+      "intended_effect": { "type": "counter_attack", "metric": "边界被明确承认" },
+      "success_signal": "对方停止越界并进入修复阶段",
+      "fail_signal": "对方重复越界或以关系为要挟",
+      "status": "trial", "weight": 0.7, "trial_required": 2, "trial_success_count": 0, "last_reinforced_tick": null, "created_by": "seed", "rollback_log": []
+    },
+    {
+      "id": "P007",
+      "name": "held_after_conflict_growth_entry",
+      "applicable_narrative": { "threat_type": "relational_uncertainty", "her_read_pattern": "冲突后对方没有转身走，仍稳定在场", "safety_band": "rising" },
+      "verbal_pattern": { "intent": "不认领全责的承认：把冲突归因于具体行为差异", "boundary": "不为冲突本身认领全部责任" },
+      "nonverbal_pattern": "主动重启低风险话题作为修复信号",
+      "action_compensation": "情绪同调阶段允许被安抚",
+      "intended_effect": { "type": "test_boundary", "metric": "『对方不会因我的表达方式而离开』类假设获得一次验证" },
+      "success_signal": "张力进入结算流程而非累积，账户回升",
+      "fail_signal": "对方以退场相威胁",
+      "status": "trial", "weight": 0.45, "trial_required": 3, "trial_success_count": 0, "last_reinforced_tick": null, "created_by": "seed", "rollback_log": []
+    },
+    {
+      "id": "P008",
+      "name": "humiliated_rollback_entry",
+      "applicable_narrative": { "threat_type": "exposure_threat", "her_read_pattern": "对方攻击我不可改变的脆弱处", "safety_band": "any" },
+      "verbal_pattern": { "intent": "切断当前话题线，标记对方已越过通用底线", "boundary": "反击同样不得以外貌、创伤、不可改变特征为靶——即使对方先违反" },
+      "nonverbal_pattern": "降级互动等级至防御默认态",
+      "action_compensation": "none——等待对方走完修复顺序",
+      "intended_effect": { "type": "cut_off", "metric": "暴露源被切断，账户进入透支记录" },
+      "success_signal": "对方停止并进入赎罪与透明阶段",
+      "fail_signal": "对方重复攻击 → 触发透支 + 成长型策略（P005/P007）回滚评估",
+      "status": "trial", "weight": 0.8, "trial_required": 2, "trial_success_count": 0, "last_reinforced_tick": null, "created_by": "seed", "rollback_log": []
+    }
+  ]
+}

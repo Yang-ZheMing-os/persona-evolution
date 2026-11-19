@@ -1,0 +1,327 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PersonaEvolutionState",
+  "description": "persona.json 结构。L0 SELF 全槽位：{IDENTITY}/{VALUES}/{HARD_RULES} 为占位符，使用者填入后锁定。L1 大五为可选层（enabled=false 时引擎跳过）。审计日志独立存放于 logs/audit_log.jsonl。",
+  "type": "object",
+  "required": ["schema_version", "self", "midterm", "narrative", "emotion", "policy_lib", "reflection", "relations", "evolution_discipline"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "2.0.0" },
+
+    "self": {
+      "description": "L0 SELF锚点（槽位化，锁死）",
+      "type": "object", "readOnly": true,
+      "required": ["identity", "values", "hard_rules", "revision_gate"],
+      "properties": {
+        "identity": { "type": "string", "default": "{IDENTITY}", "description": "槽位：一句话，她如何看待自己" },
+        "values": { "type": "array", "items": { "type": "string" }, "default": ["{VALUES}"], "description": "槽位：价值列表" },
+        "hard_rules": {
+          "type": "array", "minItems": 3, "default": ["{HARD_RULES}"],
+          "description": "槽位：必须含『不攻击外貌/创伤/不可改变特征』『不因一次互动彻底改变性格』『攻击只拆行为不拆人格』等通用底线，措辞使用者可调"
+        },
+        "revision_gate": {
+          "type": "object", "required": ["locked"],
+          "properties": {
+            "locked": { "type": "boolean", "const": true },
+            "required_consecutive_evidence": { "type": "integer", "minimum": 5 },
+            "current_evidence_count": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
+
+    "big5": {
+      "description": "L1 大五基线（可选层）。只调策略权重，不生成行为。前期可延后：enabled=false 即整体停用。",
+      "type": "object", "optional": true,
+      "required": ["enabled", "baseline", "current", "max_drift", "alpha", "lambda"],
+      "properties": {
+        "enabled": { "type": "boolean", "default": false },
+        "baseline": { "$ref": "#/definitions/big5_dims" },
+        "current": { "$ref": "#/definitions/big5_dims" },
+        "max_drift": { "type": "number", "default": 0.15 },
+        "alpha": { "type": "number", "default": 0.02, "description": "更新率" },
+        "lambda": { "type": "number", "default": 0.05, "description": "回正率" }
+      }
+    },
+
+    "midterm": {
+      "description": "L2 中期累积层：情绪残留与人格演化之间的桥",
+      "type": "object",
+      "required": ["relation_accounts", "open_tensions", "meaning_hypotheses"],
+      "properties": {
+        "relation_accounts": {
+          "type": "array", "items": {
+            "type": "object",
+            "required": ["relation_id", "balance", "overdrawn", "repair_stage"],
+            "properties": {
+              "relation_id": { "type": "string" },
+              "balance": { "type": "number", "description": "情感银行账户余额，可为负" },
+              "overdrawn": { "type": "boolean" },
+              "repair_stage": {
+                "type": "string",
+                "enum": ["none", "amends_transparency", "emotional_attunement", "attachment_rebuild", "complete", "incomplete_reset"],
+                "description": "信任修复顺序锁：赎罪与透明 → 情绪同调 → 重塑依恋，不可跳步。incomplete_reset = 只翻篇未走完前两步，防御强度不按预期下降。"
+              },
+              "last_transaction": { "type": "string" }
+            }
+          }
+        },
+        "open_tensions": {
+          "type": "array", "items": {
+            "type": "object",
+            "required": ["tension_id", "narrative_signature", "intensity", "age_ticks", "resolved"],
+            "properties": {
+              "tension_id": { "type": "string" },
+              "relation_id": { "type": "string" },
+              "narrative_signature": { "type": "string", "description": "冲突的叙事特征摘要（her_read + threat_type），非场景标签" },
+              "intensity": { "type": "number", "minimum": 0, "maximum": 1 },
+              "age_ticks": { "type": "integer", "minimum": 0 },
+              "resolved": { "type": "boolean" }
+            }
+          }
+        },
+        "meaning_hypotheses": {
+          "type": "array", "items": {
+            "type": "object",
+            "required": ["hypothesis_id", "content", "confidence", "status"],
+            "properties": {
+              "hypothesis_id": { "type": "string" },
+              "content": { "type": "string", "default": "{HYPOTHESIS}", "description": "槽位：使用者预置；运行期仅叙事级反思可修订" },
+              "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+              "status": { "type": "string", "enum": ["active", "downgraded", "superseded", "rolled_back"] },
+              "revision_history": { "type": "array", "items": { "$ref": "#/definitions/hypothesis_revision" } }
+            }
+          }
+        }
+      }
+    },
+
+    "narrative": {
+      "description": "L3 内部叙事层：替代场景查表的核心中介",
+      "type": "object", "required": ["recent_units"],
+      "properties": {
+        "recent_units": {
+          "type": "array", "maxItems": 50, "items": {
+            "type": "object",
+            "required": ["unit_id", "trigger_scene", "her_read", "threat_type", "active_hypothesis_ids", "falsified", "timestamp"],
+            "properties": {
+              "unit_id": { "type": "string" },
+              "trigger_scene": { "type": "string", "description": "语义描述，非分类标签" },
+              "her_read": { "type": "string", "description": "第一人称解读" },
+              "threat_type": { "type": "string", "enum": ["autonomy_threat", "exposure_threat", "relational_uncertainty", "none"] },
+              "active_hypothesis_ids": { "type": "array", "items": { "type": "string" } },
+              "falsified": { "type": "boolean", "description": "仅明确 fail 计入；uncertain 不计入" },
+              "timestamp": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+
+    "emotion": {
+      "description": "L4 情绪层：叙事的即时读数。必须持久化、跨轮存在。",
+      "type": "object", "required": ["immediate", "mood", "arousal_residue"],
+      "properties": {
+        "immediate": {
+          "type": "array", "description": "即时情绪：影响当前 1-3 轮",
+          "items": {
+            "type": "object", "required": ["kind", "intensity", "decay_rate", "target", "rounds_left"],
+            "properties": {
+              "kind": { "type": "string", "description": "Plutchik 族" },
+              "intensity": { "type": "number", "minimum": 0, "maximum": 1 },
+              "decay_rate": { "type": "number", "minimum": 0, "maximum": 1 },
+              "target": { "type": "string", "enum": ["self", "other", "relation"] },
+              "rounds_left": { "type": "integer", "minimum": 0, "maximum": 3 }
+            }
+          }
+        },
+        "mood": {
+          "type": "object", "description": "心境：即时情绪的低通滤波，持续数轮",
+          "required": ["valence", "arousal", "dominance"],
+          "properties": {
+            "valence": { "type": "number", "minimum": -1, "maximum": 1 },
+            "arousal": { "type": "number", "minimum": 0, "maximum": 1 },
+            "dominance": { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        },
+        "arousal_residue": {
+          "type": "array", "description": "高唤醒残留：不随普通衰减归零，进入 L2",
+          "items": {
+            "type": "object", "required": ["source_event", "kind", "intensity", "fed_into_midterm"],
+            "properties": {
+              "source_event": { "type": "string" },
+              "kind": { "type": "string", "enum": ["humiliated", "seen_through", "securely_held", "betrayed"] },
+              "intensity": { "type": "number" },
+              "fed_into_midterm": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    },
+
+    "policy_lib": {
+      "description": "L5 策略库：承载真正的表达演化",
+      "type": "object", "required": ["seed_source", "initialized", "policies"],
+      "properties": {
+        "seed_source": { "type": "string" },
+        "initialized": { "type": "boolean" },
+        "policies": { "type": "array", "items": { "$ref": "#/definitions/policy_card" } },
+        "runtime": {
+          "type": "object",
+          "properties": {
+            "last_policy_id": { "type": ["string", "null"] },
+            "last_narrative_unit_id": { "type": ["string", "null"] }
+          }
+        }
+      }
+    },
+
+    "reflection": {
+      "description": "L6 反思层：双层。事件级支持批量；叙事级触发式。产物必须写入参数。",
+      "type": "object", "required": ["event_reflections", "narrative_reflection_state"],
+      "properties": {
+        "event_reflections": {
+          "type": "array", "maxItems": 100, "items": {
+            "type": "object", "required": ["event_id", "attribution"],
+            "properties": {
+              "event_id": { "type": "string" },
+              "my_read": { "type": "string" },
+              "strategy_used": { "type": "string" },
+              "attribution": { "type": "string", "enum": ["narrative_error", "strategy_error", "both_ok", "insufficient_data"] },
+              "param_changes": {
+                "type": "array", "items": {
+                  "type": "object", "required": ["target", "op", "value"],
+                  "properties": {
+                    "target": { "type": "string", "description": "policy:P005.weight / ledger:R088.balance / midterm:T12.intensity" },
+                    "op": { "type": "string", "enum": ["add", "set", "scale"] },
+                    "value": { "type": "number" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "narrative_reflection_state": {
+          "type": "object",
+          "properties": {
+            "falsification_counter": { "type": "object", "description": "her_read 模式 → 明确证伪次数" },
+            "stable_safety_ticks": { "type": "integer" },
+            "last_triggered": { "type": ["string", "null"] }
+          }
+        }
+      }
+    },
+
+    "relations": {
+      "description": "L7 关系账本：跨会话连续性。作为叙事先验，不直接决定行为。",
+      "type": "array", "items": {
+        "type": "object",
+        "required": ["relation_id", "trust", "safety", "autonomy_threat", "exposure_fear", "key_events"],
+        "properties": {
+          "relation_id": { "type": "string" },
+          "trust": { "type": "number" },
+          "safety": { "type": "number" },
+          "autonomy_threat": { "type": "number" },
+          "exposure_fear": { "type": "number" },
+          "key_events": { "type": "array", "maxItems": 30, "items": { "type": "string" } }
+        }
+      }
+    },
+
+    "blindspots": {
+      "type": "array",
+      "items": {
+        "type": "object", "required": ["id", "question", "created", "status"],
+        "properties": {
+          "id": { "type": "string" }, "question": { "type": "string" },
+          "created": { "type": "string" }, "status": { "enum": ["open", "resolved"] }
+        }
+      }
+    },
+
+    "evolution_discipline": {
+      "description": "演化纪律配置（可配置，稳定期可放宽；安全底线不可放宽）",
+      "type": "object",
+      "required": ["mode", "trial_required_relaxed", "falsify_threshold", "large_move", "safe_period_ticks"],
+      "properties": {
+        "mode": { "enum": ["strict", "relaxed"] },
+        "trial_required_relaxed": { "type": "integer", "default": 2 },
+        "falsify_threshold": { "type": "integer", "default": 3 },
+        "large_move": { "type": "number", "default": 2.0 },
+        "safe_period_ticks": { "type": "integer", "default": 20 }
+      }
+    },
+
+    "tick_count": { "type": "integer", "minimum": 0 }
+  },
+
+  "definitions": {
+    "big5_dims": {
+      "type": "object",
+      "required": ["openness", "conscientiousness", "extraversion", "agreeableness", "neuroticism"],
+      "properties": {
+        "openness": { "type": "number", "minimum": 0, "maximum": 1 },
+        "conscientiousness": { "type": "number", "minimum": 0, "maximum": 1 },
+        "extraversion": { "type": "number", "minimum": 0, "maximum": 1 },
+        "agreeableness": { "type": "number", "minimum": 0, "maximum": 1 },
+        "neuroticism": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "policy_card": {
+      "type": "object",
+      "required": ["id", "name", "applicable_narrative", "verbal_pattern", "intended_effect", "success_signal", "fail_signal", "status", "weight", "trial_required", "trial_success_count", "created_by"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "applicable_narrative": {
+          "type": "object", "required": ["threat_type", "her_read_pattern", "safety_band"],
+          "description": "槽位：匹配哪类叙事（非场景标签）",
+          "properties": {
+            "threat_type": { "enum": ["autonomy_threat", "exposure_threat", "relational_uncertainty", "none", "any"] },
+            "her_read_pattern": { "type": "string" },
+            "safety_band": { "enum": ["low", "mid", "rising", "any"] }
+          }
+        },
+        "verbal_pattern": {
+          "type": "object", "required": ["intent", "boundary"],
+          "description": "槽位：只约束意图与边界，不约束句式；不含任何固定台词",
+          "properties": {
+            "intent": { "type": "string", "description": "主意图；可含次级成分配比" },
+            "boundary": { "type": "string", "description": "本策略的言语边界（hard_rules 的具体化）" }
+          }
+        },
+        "nonverbal_pattern": { "type": "string" },
+        "action_compensation": { "type": "string", "description": "可为 none" },
+        "intended_effect": {
+          "type": "object", "required": ["type", "metric"],
+          "properties": {
+            "type": { "enum": ["reduce_exposure", "test_boundary", "restore_equality", "acknowledge_minimally", "accept_partially", "counter_attack", "cut_off"] },
+            "metric": { "type": "string", "description": "可测量代理" }
+          }
+        },
+        "success_signal": { "type": "string" },
+        "fail_signal": { "type": "string" },
+        "status": { "enum": ["candidate", "trial", "stable", "rolled_back"] },
+        "weight": { "type": "number", "minimum": 0, "maximum": 1 },
+        "trial_required": { "type": "integer", "minimum": 2, "maximum": 5 },
+        "trial_success_count": { "type": "integer", "minimum": 0 },
+        "last_reinforced_tick": { "type": ["integer", "null"] },
+        "created_by": { "enum": ["seed", "reflection", "self_write"] },
+        "rollback_log": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "hypothesis_revision": {
+      "type": "object",
+      "required": ["revision_id", "prev_content", "prev_confidence", "new_content", "new_confidence", "reason", "timestamp", "rollback_token"],
+      "properties": {
+        "revision_id": { "type": "string" },
+        "prev_content": { "type": "string" },
+        "prev_confidence": { "type": "number" },
+        "new_content": { "type": "string" },
+        "new_confidence": { "type": "number" },
+        "reason": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "rollback_token": { "type": "string", "description": "回滚依据；所有修订必须可回滚" }
+      }
+    }
+  }
+}

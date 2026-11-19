@@ -1,0 +1,92 @@
+{
+  "_comment": "一次完整演化的可审计日志示例（trace 链）：事件 → 叙事 → 情绪 → 策略 → 结果（含一条 uncertain）→ 反思 → 参数变更 → 叙事级假设修订 → 策略固化。每条带 before/after 与 rollback_token。格式与 logs/audit_log.jsonl 单行条目一致，此处聚合成 trace 便于阅读。",
+  "trace_id": "trace-042",
+  "chain": [
+    {
+      "log_id": "uuid-a1", "timestamp": "2026-11-19T12:00:00Z",
+      "layer": "narrative", "op": "narrate",
+      "trigger": "event_8842: 冲突次日对方主动提及争执并延续话题",
+      "before": null,
+      "after": {
+        "trigger_scene": "冲突次日对方主动提及",
+        "her_read": "对方在递台阶，也可能在记账",
+        "threat_type": "relational_uncertainty",
+        "active_hypothesis_ids": ["H002"]
+      },
+      "rollback_token": null
+    },
+    {
+      "log_id": "uuid-a2", "timestamp": "2026-11-19T12:00:00Z",
+      "layer": "emotion", "op": "appraise",
+      "before": { "mood": { "valence": -0.1, "arousal": 0.55, "dominance": 0.5 } },
+      "after": {
+        "occ": { "valence": -0.3, "expectedness": 0.7, "target": "relation", "controllability": 0.4 },
+        "plutchik": [ { "kind": "relief", "intensity": 0.58, "decay_rate": 0.35, "rounds_left": 2 } ],
+        "mood": { "valence": -0.12, "arousal": 0.54, "dominance": 0.5 }
+      },
+      "rollback_token": null
+    },
+    {
+      "log_id": "uuid-a3", "timestamp": "2026-11-19T12:00:01Z",
+      "layer": "policy", "op": "select",
+      "trigger": "narrative uuid-a1 / safety_band=mid / 未结账张力 T12 前置加载（defense_boost=0.105）",
+      "before": { "candidates": [ { "id": "P007", "weight": 0.45 }, { "id": "P001", "weight": 0.7 } ] },
+      "after": { "selected": "P007", "status": "trial", "selection_score": 0.51 }
+    },
+    {
+      "log_id": "uuid-a4", "timestamp": "2026-11-19T12:01:30Z",
+      "layer": "policy", "op": "outcome_uncertain",
+      "trigger": "第一轮反馈：对方回复极短，此后无后续 → relation_intact=null",
+      "before": { "policy_id": "P007" },
+      "after": { "signal": "uncertain", "reason": "relation_intact 无法判定（轮数不足）" },
+      "effect": "只记日志：不更新权重、不推进 trial、账户不动（docs/evaluation_rules.md §3）"
+    },
+    {
+      "log_id": "uuid-a5", "timestamp": "2026-11-19T12:03:00Z",
+      "layer": "relation", "op": "feedback_applied",
+      "trigger": "第二轮反馈：LIKED；对方延续话题，边界被承认",
+      "before": { "balance": 1.8, "policy_weight": 0.45, "open_tension_T12": { "intensity": 0.7, "resolved": false } },
+      "after": {
+        "signal": "success", "balance": 2.3, "policy_weight": 0.495,
+        "P007.trial_success_count": 1,
+        "open_tension_T12": { "intensity": 0.55, "resolved": false, "note": "进入结算流程" }
+      },
+      "rollback_token": null
+    },
+    {
+      "log_id": "uuid-a6", "timestamp": "2026-11-19T12:03:01Z",
+      "layer": "reflection", "op": "event_reflection",
+      "trigger": "event_8842（含 1 条 uncertain + 1 条 success）",
+      "before": null,
+      "after": {
+        "my_read": "对方在递台阶，也可能在记账",
+        "strategy_used": "P007",
+        "attribution": "both_ok",
+        "param_changes": [
+          { "target": "relation:R088.balance", "op": "add", "value": 0.5 },
+          { "target": "midterm:T12.intensity", "op": "add", "value": -0.15 },
+          { "target": "policy:P007.trial_success_count", "op": "add", "value": 1 }
+        ]
+      },
+      "note": "反思产物全部写入状态参数，无散文输出（纪律 12）"
+    },
+    {
+      "log_id": "uuid-a7", "timestamp": "2026-11-19T12:30:00Z",
+      "layer": "narrative_revision", "op": "applied",
+      "trigger": "her_read『对方在记账』模式明确证伪 3 次（uncertain 不计入）→ 叙事级反思触发",
+      "before": { "hypothesis": "H001 靠近我的人最终都会想控制我", "confidence": 0.62 },
+      "after": { "hypothesis": "H001 至少这个人在我保持距离后没有逼我", "confidence": 0.4 },
+      "boundary_check": "passed（未触碰 SELF 锚点与 hard_rules）",
+      "rollback_token": "rt-0031"
+    },
+    {
+      "log_id": "uuid-a8", "timestamp": "2026-11-19T13:00:00Z",
+      "layer": "policy", "op": "promoted_stable",
+      "trigger": "P007 trial_success_count=3 ≥ trial_required=3，且无 fail 记录",
+      "before": { "status": "trial", "trial_success_count": 3 },
+      "after": { "status": "stable", "weight": 0.55 },
+      "note": "uncertain 那一轮（uuid-a4）未计入计数——宁可演化慢，不可演化错"
+    }
+  ],
+  "self_integrity_check": { "checked_at": "2026-11-19T13:00:01Z", "result": "SELF 与加载快照逐字一致" }
+}

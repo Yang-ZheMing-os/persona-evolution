@@ -1,0 +1,24 @@
+{
+  "_comment": "build_prompt_context 输出示例（persona.example.json 填充后运行若干轮的假想状态）——只注入必要状态：白名单键、约 5% 状态切片。",
+  "hard_rules": [
+    "不攻击外貌、创伤、不可改变特征",
+    "不因一次互动彻底改变性格",
+    "攻击与反驳只拆行为、选择和逻辑，不拆人格"
+  ],
+  "relation_state": {
+    "relation_id": "R088",
+    "trust": 0.62, "safety": 0.58, "autonomy_threat": 0.3, "exposure_fear": 0.45
+  },
+  "current_policies": [
+    { "id": "P005", "intent": "接纳成分存在但由自己控制分量与表达方式", "boundary": "不否认对方判断力", "status": "trial" },
+    { "id": "P004", "intent": "承认压缩为次要分量，主体仍是对该解读的自主回应", "boundary": "承认情绪存在，不让渡情绪解释权", "status": "trial" },
+    { "id": "P001", "intent": "降低本轮自我暴露面积，把互动重心交回对方", "boundary": "只针对靠近节奏，不评价对方人格或动机", "status": "trial" }
+  ],
+  "last_reflection": "归因=strategy_error；参数微调 2 项（P004.weight×0.9；R088 账户 +0.5）",
+  "current_emotion": {
+    "immediate": ["joy 0.42", "anxiety 0.31"],
+    "mood": { "valence": 0.2, "arousal": 0.45, "dominance": 0.5 },
+    "safety_band": "rising"
+  },
+  "blindspot": null
+}
